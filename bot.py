@@ -5,7 +5,7 @@ from datasets.twitter.data import clear_message
 from random import randint
 
 
-updater = Updater(token='494392101:AAGM1SLC5ImvjzdYiWQpwgWq54NjpdzbsMg')
+updater = Updater(token='TOKEN')
 dispatcher = updater.dispatcher
 
 
