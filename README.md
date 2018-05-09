@@ -8,7 +8,7 @@ what's under the hood:
 
 **3.** structure of (sentence vector (sum of its words vectors); its reply) - used to efficiently find the most appropriate reply
 
-**4.** searching for *K* closest (most similar sentences) for the input using cosine similarity
+**4.** searching for *K* closest (most similar sentences) for the input using cosine similarity, taking one answer with weighted random (similarity as probability)
 
 **5.** cleaning output from names (in order to keep the publicity away)
 
