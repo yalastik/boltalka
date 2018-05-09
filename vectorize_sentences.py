@@ -1,20 +1,16 @@
-import gensim
-from tqdm import tqdm_notebook
 from gensim.models import Word2Vec
 from scipy.spatial.distance import cosine
-import string
 import numpy as np
 import logging
 import heapq
 import pickle
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-FILE_NAME = 'messages.txt'
+DATA_DIRECTORY = 'data/'
+MODEL_DIRECTORY = 'models/'
 
-
-def load_data(PATH='/Users/yanasavva/JupyterNotebook/boltalka/data/'):
-    # read data control dictionaries
-    with open(PATH + 'metadata_corpus.pkl', 'rb') as f:
+def load_data():
+    with open(DATA_DIRECTORY + 'metadata_corpus.pkl', 'rb') as f:
         metadata = pickle.load(f)
     return metadata['q_tok'], metadata['a_tok']
 
@@ -25,13 +21,14 @@ def build_w2v_model(qtokenized, atokenized, size=256, window=8, min_count=0, ite
     return w2v_model
 
 
-def load_w2v_model(path='models/',name='model_vk_tg'):
-    return Word2Vec.load(path + name)
+def load_w2v_model(name='model_vk_tg'):
+    return Word2Vec.load(MODEL_DIRECTORY + name)
 
-def load_names(path='datasets/twitter/',name='names.pkl'):
-    with open(path + name, 'rb') as f:
+
+def load_names(name='names.pkl'):
+    with open(DATA_DIRECTORY + name, 'rb') as f:
         names = pickle.load(f)
-    return name
+    return names
 
 
 def find_vector(model, message):
@@ -43,8 +40,19 @@ def find_vector(model, message):
 
 
 def vectorize_pairs(qtokenized, atokenized, model):
-    pairs = [(find_vector(model, q_tok), ' '.join(a_tok).strip()) for (q_tok, a_tok) in zip(qtokenized, atokenized)]
+    # pairs = [(find_vector(model, q_tok), ' '.join(a_tok).strip()) for (q_tok, a_tok) in zip(qtokenized, atokenized)]
+    names = load_names()
+    pairs = [(find_vector(model, q_tok), replace_name(names, a_tok).strip()) for (q_tok, a_tok) in zip(qtokenized, atokenized)]
     return pairs
+
+
+def replace_name(names, sent):
+    answ = ""
+    for word in sent:
+        if word.lower() in names:
+            word = word[0].upper() + '.'
+        answ += word + ' '
+    return answ
 
 
 class Mes2Vec():
@@ -62,7 +70,6 @@ class Mes2Vec():
             heapq.heappush(heap, (sim, s))
         return heap[:n]
 
-
     def replace_name(self, sent):
         answ = ""
         for word in sent:
@@ -74,7 +81,7 @@ class Mes2Vec():
     def throw_sentence(self, message, n=5):
         sents = self.n_most_similar(message,n)
         # return ' '.join(np.random.choice([s[1] for s in sents], 1, [s[0] for s in sents])).strip()
-        return self.replace_name(np.random.choice([s[1] for s in sents], 1, [s[0] for s in sents])).strip()
+        return np.random.choice([s[1] for s in sents], 1, [s[0] for s in sents])[0]
 
     def testing(self, samples=None):
         if samples == None:
