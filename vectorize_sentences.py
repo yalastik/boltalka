@@ -4,15 +4,19 @@ import numpy as np
 import logging
 import heapq
 import pickle
+import re
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 DATA_DIRECTORY = 'data/'
 MODEL_DIRECTORY = 'models/'
 
+
 def load_data():
     with open(DATA_DIRECTORY + 'metadata_corpus.pkl', 'rb') as f:
         metadata = pickle.load(f)
-    return metadata['q_tok'], metadata['a_tok']
+    with open(DATA_DIRECTORY + 'answers.txt', 'r') as f:
+        answers = [re.sub('\n', '', line) for line in f.readlines()]
+    return metadata['q_tok'], metadata['a_tok'], answers
 
 
 def build_w2v_model(qtokenized, atokenized, size=256, window=8, min_count=0, iter=500, name='model_vk_tg'):
@@ -42,25 +46,25 @@ def find_vector(model, message):
 def vectorize_pairs(qtokenized, atokenized, model):
     # pairs = [(find_vector(model, q_tok), ' '.join(a_tok).strip()) for (q_tok, a_tok) in zip(qtokenized, atokenized)]
     names = load_names()
-    pairs = [(find_vector(model, q_tok), replace_name(names, a_tok).strip()) for (q_tok, a_tok) in zip(qtokenized, atokenized)]
+    pairs = [(find_vector(model, q_tok), replace_name(names, a_tok).strip()) for (q_tok, a_tok) in
+             zip(qtokenized, atokenized)]
     return pairs
 
 
 def replace_name(names, sent):
     answ = ""
     for word in sent:
-        if word.lower() in names:
-            word = word[0].upper() + '.'
+        if re.sub('[,./?!)(]', '', word.lower()) in names:
+            word = re.sub('[,./?!)(]', '', word.lower())[0].upper() + '.'
         answ += word + ' '
     return answ
 
 
 class Mes2Vec():
     def __init__(self):
-        self.qtokenized, self.atokenized = load_data()
+        self.qtokenized, self.atokenized, self.answers = load_data()
         self.w2v_model = load_w2v_model()
-        self.pairs = vectorize_pairs(self.qtokenized, self.atokenized, self.w2v_model)
-        self.names = load_names()
+        self.pairs = self.vectorize_pairs()
 
     def n_most_similar(self, message, n):
         vector = find_vector(self.w2v_model, message)
@@ -70,16 +74,14 @@ class Mes2Vec():
             heapq.heappush(heap, (sim, s))
         return heap[:n]
 
-    def replace_name(self, sent):
-        answ = ""
-        for word in sent:
-            if word.lower() in self.names:
-                word = word[0].upper() + '.'
-            answ += word + ' '
-        return answ
+    def vectorize_pairs(self):
+        names = load_names()
+        pairs = [(find_vector(self.w2v_model, q_tok), replace_name(names, a.split()).strip()) for (q_tok, a) in
+                 zip(self.qtokenized, self.answers)]
+        return pairs
 
     def throw_sentence(self, message, n=5):
-        sents = self.n_most_similar(message,n)
+        sents = self.n_most_similar(message, n)
         # return ' '.join(np.random.choice([s[1] for s in sents], 1, [s[0] for s in sents])).strip()
         return np.random.choice([s[1] for s in sents], 1, [s[0] for s in sents])[0]
 
