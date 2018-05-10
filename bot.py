@@ -5,7 +5,7 @@ from data.data import clear_message
 from random import randint
 
 
-updater = Updater(token='494392101:AAGM1SLC5ImvjzdYiWQpwgWq54NjpdzbsMg')
+updater = Updater(token='MY_TOKEN')
 dispatcher = updater.dispatcher
 sticker_ids = ['CAADAgADAQADFgqsEHouQiu0Tr5WAg', 'CAADAgADBwADFgqsEA7M9oZNeed8Ag',
                'CAADAgADEQADFgqsEG1HufYsO4V5Ag', 'CAADAgADEAADFgqsELpgOnM_DpG7Ag',
