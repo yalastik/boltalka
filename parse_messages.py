@@ -3,13 +3,13 @@ import time
 import pickle
 from telethon.tl.types import User
 from telethon import TelegramClient
-import re
+import re, datetime
 
 # stuff for vk
 session = vk.Session(access_token='VK_TOKEN')
 vkapi = vk.API(session)
 
-SELF_ID = 83784811
+SELF_ID = [83784811,359134637]
 SLEEP_TIME = 0.3
 
 friends = vkapi('friends.get',version='5.74')
@@ -78,17 +78,7 @@ def get_history(friends, sleep_time=SLEEP_TIME):
     return all_history
 
 
-def get_messages_for_user(data):
-    messages = []
-    for dialog in data:
-        if type(dialog) == dict:
-            m_text = re.sub("<br>", " ", dialog['body'])
-            messages.append(m_text)
-    print('Extracted', len(messages), 'messages in total')
-    return messages
-
-
-def save_vk_messages(data, file_name='vk_messages.txt', my_id=SELF_ID):
+def save_vk_messages(data, file_name='vk_messages.txt', my_id=83784811):
     length = len(data)
     with open(file_name, 'w') as f:
         my_message, other_message, current_speaker = "", "", 0
@@ -96,6 +86,9 @@ def save_vk_messages(data, file_name='vk_messages.txt', my_id=SELF_ID):
             if message['from_id'] == my_id:
                 if not my_message:
                     start_index = index - 1
+                    curr_time = message['date']
+                if message['date'] - curr_time > 60 or index - start_index > 2:
+                    my_message += '~'
                 my_message += message['body'] + ' '
             elif my_message:
                 for cnt in range(start_index, 0, -1):
@@ -107,7 +100,7 @@ def save_vk_messages(data, file_name='vk_messages.txt', my_id=SELF_ID):
                         current_speaker = tmp_mess['from_id']
                     elif current_speaker != tmp_mess['from_id']:
                         other_message = clean_message(other_message)
-                        my_message = clean_message(my_message)
+                        my_message = clean_my_message(my_message)
                         f.write(other_message + '\n')
                         f.write(my_message + '\n')
                         break
@@ -125,7 +118,10 @@ def save_tg_messages(data, file_name='tg_messages.txt', my_id=359134637):
             if message.from_id == my_id:
                 if not my_message:
                     start_index = index - 1
+                    curr_time = message.date
                 if message.message:
+                    if message.date - curr_time > datetime.timedelta(60) or index - start_index > 2:
+                        my_message += '~'
                     my_message += message.message + ' '
             elif my_message:
                 for cnt in range(start_index, 0, -1):
@@ -137,7 +133,7 @@ def save_tg_messages(data, file_name='tg_messages.txt', my_id=359134637):
                         current_speaker = tmp_mess.from_id
                     elif current_speaker != tmp_mess.from_id:
                         other_message = clean_message(other_message)
-                        my_message = clean_message(my_message)
+                        my_message = clean_my_message(my_message)
                         f.write(other_message + '\n')
                         f.write(my_message + '\n')
                         break
@@ -145,7 +141,6 @@ def save_tg_messages(data, file_name='tg_messages.txt', my_id=359134637):
                 my_message, other_message, current_speaker = "","",0
             if index % 100 == 0:
                 print('saved {} messages, {} left'.format(index, length - index))
-
 
 def clean_message(message):
     # Remove new lines within message
@@ -157,11 +152,20 @@ def clean_message(message):
     return cleanedMessage
 
 
+def clean_my_message(message):
+    # Remove new lines within message
+    cleanedMessage = message.replace('\n',' ')
+    # Remove multiple spaces in message
+    cleanedMessage = re.sub(' +',' ', cleanedMessage)
+    # Remove html tag
+    cleanedMessage = re.sub('<br>',' ', cleanedMessage)
+    return cleanedMessage
+
+
 def load_data(file_name):
-    with open('vk_messages.dat', 'rb') as f:
-        vk_messages = pickle.load(f)
-        vk_messages = vk_messages[::-1]
-        return vk_messages
+    with open('data/extended data/'+file_name, 'rb') as f:
+        messages = pickle.load(f)
+        return messages
 
 
 if __name__ == '__main__':
