@@ -88,27 +88,29 @@ def process_data():
     print('\n>> Read lines from file')
     lines = read_lines(filename=FILENAME)
 
-    # change to lower case (just for en)
-    lines = [line.lower() for line in lines]
-
-    print('\n:: Sample from read(p) lines')
-    print(lines[121:125])
-
-    # filter out unnecessary characters
-    print('\n>> Filter lines')
-    lines = [filter_line(line, EN_WHITELIST) for line in lines]
-    print(lines[121:125])
-
     # filter out too long or too short sequences
     print('\n>> 2nd layer of filtering')
     qlines, alines = filter_data(lines)
+    for a in [x for x in alines if x.find('~') != -1]: alines[alines.index(a)] = a[:a.find('~')]
     print('\nq : {0} ; a : {1}'.format(qlines[60], alines[60]))
     print('\nq : {0} ; a : {1}'.format(qlines[61], alines[61]))
 
+    # change to lower case (just for en)
+    qlines_filtered = [qline.lower() for qline in qlines]
+    alines_filtered = [aline.lower() for aline in alines]
+
+    print('\n:: Sample from read(p) lines')
+    print(qlines[121:125])
+
+    # filter out unnecessary characters
+    print('\n>> Filter lines')
+    qlines_filtered = [filter_line(line, EN_WHITELIST) for line in qlines_filtered]
+    alines_filtered = [filter_line(line, EN_WHITELIST) for line in alines_filtered]
+
     # convert list of [lines of text] into list of [list of words ]
     print('\n>> Segment lines into words')
-    qtokenized = [wordlist.split(' ') for wordlist in qlines]
-    atokenized = [wordlist.split(' ') for wordlist in alines]
+    qtokenized = [wordlist.split(' ') for wordlist in qlines_filtered]
+    atokenized = [wordlist.split(' ') for wordlist in alines_filtered]
     print('\n:: Sample from segmented list of words')
     print('\nq : {0} ; a : {1}'.format(qtokenized[60], atokenized[60]))
     print('\nq : {0} ; a : {1}'.format(qtokenized[61], atokenized[61]))
@@ -117,6 +119,7 @@ def process_data():
         'q_tok': qtokenized,
         'a_tok': atokenized,
         'limit': limit,
+        'answers' : alines
     }
 
     # write to disk : data control dictionaries
